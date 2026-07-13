@@ -17,7 +17,7 @@ const pgClient = new Pool({
 	user: keys.pgUser,
 	host: keys.pgHost,
 	database: keys.pgDatabase,
-	password: keys.pgPasssword,
+	password: keys.pgPassword,
 	port: keys.pgPort,
 });
 
@@ -48,7 +48,7 @@ app.get("/", (req, res) => {
 // Reaching postgres for all data
 app.get("/values/all", async (req, res) => {
 	const values = await pgClient.query("SELECT * FROM values");
-	res.send(values.row);
+	res.send(values.rows);
 });
 
 // Reaching Redis for all data with index and calculated fibonacci number
