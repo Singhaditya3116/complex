@@ -1,0 +1,17 @@
+name: "Build Test and Push Image to Docker Hub"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Build Docker Test Image
+        run: docker build -t multi-frontend-test -f Dockerfile.dev ./client
+      - name: Run Test Cases
+        run: docker run multi-frontend-test npm run test -- --coverage
