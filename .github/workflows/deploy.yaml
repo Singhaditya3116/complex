@@ -16,8 +16,11 @@ jobs:
       - name: Run test cases
         run: docker run multi-frontend-test npm run test -- --coverage
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Build production images
         run: |
           docker build -t multi-client ./client
