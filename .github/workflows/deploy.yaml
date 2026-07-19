@@ -12,6 +12,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Build Docker Test Image
-        run: docker build -t multi-frontend-test -f Dockerfile.dev ./client
+        run: docker build -t multi-frontend-test -f ./client/Dockerfile.dev ./client
       - name: Run Test Cases
         run: docker run multi-frontend-test npm run test -- --coverage
