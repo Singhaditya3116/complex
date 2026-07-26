@@ -36,6 +36,7 @@ const redisClient = redis.createClient({
 	host: keys.redisHost,
 	port: keys.redisPort,
 	retry_strategy: () => 1000,
+	...(keys.redisTls && { tls: {} }),
 });
 
 const redisPublisher = redisClient.duplicate();
