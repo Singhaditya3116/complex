@@ -38,5 +38,23 @@ jobs:
           docker push ${{ secrets.DOCKER_ID }}/multi-server
           docker push ${{ secrets.DOCKER_ID }}/multi-worker
           docker push ${{ secrets.DOCKER_ID }}/multi-nginx
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Generate deployment package
+        run: zip -r deploy.zip docker-compose.yml
+      - name: Deploy to elastic bean stalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+          application_name: multi-docker
+          environment_name: Multi-docker-env
+          version_label: ${{ github.run_id }}
+          region: us-east-1
+          deployment_package: deploy.zip
 
 
