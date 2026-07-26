@@ -1,9 +1,9 @@
-name: "Build Test and Push Image to Docker Hub"
+name: "Test, Build and Push image to dockerhub and deploy to EB"
 
 on:
   push:
     branches:
-      - main
+      - "**"
 
 jobs:
   test:
@@ -17,6 +17,7 @@ jobs:
         run: docker run multi-frontend-test npm run test -- --coverage
   build-and-push:
     needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -40,6 +41,7 @@ jobs:
           docker push ${{ secrets.DOCKER_ID }}/multi-nginx
   deploy:
     needs: build-and-push
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
