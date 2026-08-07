@@ -20,6 +20,7 @@ services:
       - PGDATABASE=${PGDATABASE}
       - PGPASSWORD=${PGPASSWORD}
       - PGPORT=${PGPORT}
+      - PG_SSL=${PG_SSL}
 
   worker:
     image: singhaditya3116/multi-worker
