@@ -1,0 +1,71 @@
+name: "Test, Build Images and Push to DockerHub and Deploy to GKE Cluster"
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: "Build test image"
+        run: docker build -t multi-client-test -f ./k8sRepo/client/Dockerfile.dev ./k8sRepo/client
+      - name: Execute test cases
+        run: docker run multi-client-test npm run test -- --coverage
+
+  build-and-push:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Login to docker hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_ID }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build production images
+        run: |
+          docker build -t ${{ secrets.DOCKER_ID }}/multi-client:latest -t ${{ secrets.DOCKER_ID }}/multi-client:${{ github.sha}} ./k8sRepo/client
+          docker build -t ${{ secrets.DOCKER_ID }}/multi-server:latest -t ${{ secrets.DOCKER_ID }}/multi-server:${{ github.sha }} ./k8sRepo/server
+          docker build -t ${{ secrets.DOCKER_ID }}/multi-worker:latest -t ${{ secrets.DOCKER_ID }}/multi-worker:${{ github.sha }} ./k8sRepo/worker
+      - name: Push images to docker hub
+        run: |
+          docker push ${{ secrets.DOCKER_ID }}/multi-client --all-tags
+          docker push ${{ secrets.DOCKER_ID }}/multi-server --all-tags
+          docker push ${{ secrets.DOCKER_ID }}/multi-worker --all-tags
+          
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/1078800321842/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-deployer@multi-k8s-505304.iam.gserviceaccount.com
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: multi-cluster
+          location: asia-south1-a
+      - name: Apply k8s Config
+        run: kubectl apply -f ./k8sRepo/k8s
+      - name: Update Deployment Images
+        run:  |
+          kubectl set image deployments/client-deployment client=${{ secrets.DOCKER_ID }}/multi-client:${{ github.sha }}
+          kubectl set image deployments/server-deployment server=${{ secrets.DOCKER_ID }}/multi-server:${{ github.sha }}
+          kubectl set image deployments/worker-deployment worker=${{ secrets.DOCKER_ID }}/multi-worker:${{ github.sha }}
