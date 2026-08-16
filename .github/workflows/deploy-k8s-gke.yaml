@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "**"
+    path:
+      - "k8sRepo/**"
 
 jobs:
 
